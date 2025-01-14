@@ -1,0 +1,25 @@
+{
+	"int": 195,
+	"array": [3, 5.1, -7, "nine"],
+	"bool": true,
+	"double": -1e-4,
+	"null-value": null,
+	"hello": "world!",
+	"obj": {
+		"key": "val",
+		"double": 1e4,
+		"per-page": "1",
+		"since": 55647467
+	},
+	"nested": [
+		{
+			"a": "b"
+		},
+		{
+			"a": 69
+		},
+		{
+			"a": [4, 2, 0]
+		}
+	]
+}
