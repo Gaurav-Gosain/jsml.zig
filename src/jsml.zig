@@ -183,7 +183,7 @@ pub const Json = struct {
     /// }
     /// ```
     /// You can get the `city` node by calling `getNested("address.city")`.
-    /// A more complex example would be `getNested("address.nested.3.a.0")`.
+    /// A more complex example would be `getNested("address.nested.2.a.0")`.
     /// It takes a pointer to a JSON node and a path as arguments,
     /// and returns a pointer to the JSON node with the given path.
     /// If the path is not found, it returns `null`.
