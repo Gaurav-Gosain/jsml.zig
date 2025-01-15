@@ -15,7 +15,7 @@ pub const JsonType = enum {
     Bool,
 };
 
-/// A JSON node.
+/// A simple JSON parser written in Zig, for learning purposes.
 ///
 /// This is used to represent a JSON value when parsing.
 ///
@@ -47,6 +47,72 @@ pub const JsonType = enum {
 /// For example, to get the `name` value as a string, you can call `json.get("name").?.value.string`.
 ///
 /// Remember to call `deinit` on the returned `Json` when you're done with it to free the memory.
+///
+/// ## Usage Example
+///
+/// ```zig
+/// const std = @import("std");
+/// const Json = @import("jsml.zig").Json;
+///
+/// pub fn main() !void {
+///     var gpa = std.heap.GeneralPurposeAllocator(.{
+///         .safety = true,
+///         .verbose_log = false, // change to true for debugging
+///     }){};
+///
+///     defer {
+///         if (gpa.deinit() == .leak) {
+///             std.io.getStdOut().writeAll("[CRITICAL] leaked memory\n") catch unreachable;
+///         } else {
+///             std.io.getStdOut().writeAll("[GG] all memory cleaned up! No Leaks\n") catch unreachable;
+///         }
+///     }
+///
+///     const allocator = gpa.allocator();
+///
+///     // Example 1: Parse from string
+///     const json_str =
+///         \\{
+///         \\  "name": "John",
+///         \\  "age": 30,
+///         \\  "is_student": false,
+///         \\  "grades": [85, 92, 78],
+///         \\  "address": {
+///         \\    "street": "123 Main St",
+///         \\    "city": "Anytown"
+///         \\  }
+///         \\}
+///     ;
+///
+///     std.debug.print("\n=== Parsing from string ===\n", .{});
+///     var json = try Json.parse(allocator, json_str);
+///     defer json.deinit();
+///     json.print();
+///     std.debug.print("json.city: {s}\n", .{json.getNested("address.city").?.value.string});
+///     std.debug.print("json.grades[0]: {d}\n", .{json.getNested("grades.0").?.value.integer});
+///
+///     // Example 2: Parse from file
+///     std.debug.print("\n=== Parsing from file ===\n", .{});
+///
+///     const file_path = try std.fs.path.join(allocator, &[_][]const u8{
+///         std.fs.path.dirname(@src().file) orelse ".",
+///         "example.json",
+///     });
+///     defer allocator.free(file_path);
+///
+///     var file_json = try Json.parseFile(allocator, file_path);
+///     defer file_json.deinit();
+///     file_json.print();
+///     std.debug.print(
+///         "file_json.nested[2].a[0]: {d}\n",
+///         .{
+///             file_json
+///                 .getNested("nested.2.a.0").?
+///                 .value.integer,
+///         },
+///     );
+/// }
+/// ```
 pub const Json = struct {
     type: JsonType,
     key: ?[]const u8,
