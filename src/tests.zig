@@ -2,14 +2,14 @@ const std = @import("std");
 const Json = @import("jsml.zig").Json;
 
 test "parse basic types" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+    const allocator = std.testing.allocator;
 
     // Test string
     {
         const json_str = "\"hello world\"";
         const json = try Json.parse(allocator, json_str);
+        defer json.deinit();
+
         try std.testing.expectEqual(json.type, .String);
         try std.testing.expectEqualStrings(json.value.string, "hello world");
     }
@@ -18,6 +18,8 @@ test "parse basic types" {
     {
         const json_str = "42";
         const json = try Json.parse(allocator, json_str);
+        defer json.deinit();
+
         try std.testing.expectEqual(json.type, .Integer);
         try std.testing.expectEqual(json.value.integer, 42);
     }
@@ -26,6 +28,8 @@ test "parse basic types" {
     {
         const json_str = "-42";
         const json = try Json.parse(allocator, json_str);
+        defer json.deinit();
+
         try std.testing.expectEqual(json.type, .Integer);
         try std.testing.expectEqual(json.value.integer, -42);
     }
@@ -34,6 +38,8 @@ test "parse basic types" {
     {
         const json_str = "42.5";
         const json = try Json.parse(allocator, json_str);
+        defer json.deinit();
+
         try std.testing.expectEqual(json.type, .Double);
         try std.testing.expectEqual(json.value.double, 42.5);
     }
@@ -42,6 +48,8 @@ test "parse basic types" {
     {
         const json_str = "true";
         const json = try Json.parse(allocator, json_str);
+        defer json.deinit();
+
         try std.testing.expectEqual(json.type, .Bool);
         try std.testing.expectEqual(json.value.boolean, true);
     }
@@ -50,6 +58,8 @@ test "parse basic types" {
     {
         const json_str = "false";
         const json = try Json.parse(allocator, json_str);
+        defer json.deinit();
+
         try std.testing.expectEqual(json.type, .Bool);
         try std.testing.expectEqual(json.value.boolean, false);
     }
@@ -58,17 +68,18 @@ test "parse basic types" {
     {
         const json_str = "null";
         const json = try Json.parse(allocator, json_str);
+        defer json.deinit();
+
         try std.testing.expectEqual(json.type, .Null);
     }
 }
 
 test "parse array" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+    const allocator = std.testing.allocator;
 
     const json_str = "[1, \"test\", true, null, 3.14]";
     const json = try Json.parse(allocator, json_str);
+    defer json.deinit();
 
     try std.testing.expectEqual(json.type, .Array);
     try std.testing.expectEqual(json.children.items.len, 5);
@@ -90,9 +101,7 @@ test "parse array" {
 }
 
 test "parse object" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+    const allocator = std.testing.allocator;
 
     const json_str =
         \\{
@@ -108,6 +117,8 @@ test "parse object" {
     ;
 
     var json = try Json.parse(allocator, json_str);
+    defer json.deinit();
+
     try std.testing.expectEqual(json.type, .Object);
 
     // Test name
@@ -152,9 +163,7 @@ test "parse object" {
 }
 
 test "parse nested path" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+    const allocator = std.testing.allocator;
 
     const json_str =
         \\{
@@ -162,7 +171,9 @@ test "parse nested path" {
         \\    "profile": {
         \\      "name": {
         \\        "first": "John",
-        \\        "last": "Doe"
+        \\        "last": "Doe",
+        \\        "numbers": [1, 2, 3],
+        \\        "nested": [{ "a": 1 }, { "a": [1, 2, 3] }]
         \\      }
         \\    }
         \\  }
@@ -170,11 +181,28 @@ test "parse nested path" {
     ;
 
     var json = try Json.parse(allocator, json_str);
+    defer json.deinit();
 
     // Test nested path access
     if (json.getNested("user.profile.name.first")) |first_name| {
         try std.testing.expectEqual(first_name.type, .String);
         try std.testing.expectEqualStrings(first_name.value.string, "John");
+    } else {
+        return error.TestUnexpectedNull;
+    }
+
+    // user[profile][name][numbers][2]
+    if (json.getNested("user.profile.name.numbers.2")) |number| {
+        try std.testing.expectEqual(number.type, .Integer);
+        try std.testing.expectEqual(number.value.integer, 3);
+    } else {
+        return error.TestUnexpectedNull;
+    }
+
+    // user.profile.name.nested[1].a[0]
+    if (json.getNested("user.profile.name.nested.1.a.0")) |number| {
+        try std.testing.expectEqual(number.type, .Integer);
+        try std.testing.expectEqual(number.value.integer, 1);
     } else {
         return error.TestUnexpectedNull;
     }
